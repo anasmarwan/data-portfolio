@@ -1,0 +1,128 @@
+---
+title: "Quantium Virtual Intership Virtual Strategy and Analytics - Task 1"
+author: Anas Marwan
+date: 21/1/2023
+mainfont: Roboto
+monofont:Consolas
+output:
+    pdf_document:
+        df_print: default
+        highlight: tango
+        keep_tex: yes
+        latex_engine: xelatex
+    header-includes:
+        \usepackage{fvextra}
+\DefineVerbatimEnvironment{Highlighting}{Verbatim}{breaklines,commandchars=\\\{\}}
+---
+
+# Solution Task 1
+
+
+```{r setup, include=FALSE}
+library(knitr)
+knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(linewidth=80)
+```
+
+```{r knitr line wrap setup, include=FALSE}
+hook_output = knit_hooks$get("output")
+knit_hooks$set(output = function(x, options)
+{
+  if (!is.null(n <- options$linewidth))
+  {
+    x = knitr:::split_lines(x)
+    if (any(nchar(x) > n))
+      x =  strwrap(x, width = n)
+    x = paste(x, collapse = "\n")
+  }
+  hooks_output(x, options)
+})
+```
+
+#### Load required libraries
+
+```{r 0 Load Libraries, results = 'hide'}
+library(data.table)
+library(ggplot2)
+library(ggmosaic)
+library(readr)
+install.packages('readxl')
+library(readxl)
+```
+```{r}
+customerData <- read.csv('QVI_purchase_behaviour.csv')
+transactionData <- read_excel('QVI_transaction_data.xlsx')
+```
+
+## Explatory Data Analysis
+
+The first step of analysis is to understand the data. Let's take a look at each of the datasets provided.
+
+### Examining transaction data
+
+```{r Examining transaction data}
+#### observing the first few rows of the dataset
+head(transactionData)
+```
+
+```{r}
+str(transactionData)
+```
+It occurs that the date was in integer format. To clean this, we need to convert this to the date format. We first note that the date format begin on 30 Dec 1899 and it's definitely safe to assume our dataset starts after that date.
+
+```{r Convert DATE to date format}
+transactionData$DATE <- as.Date(transactionData$DATE, origin = "1899-12-30")
+head(transactionData)
+```
+Now, the date is in the appropriate format and more readable than the previous one. Next, we want to be sure that we are looking at only potato chips. Let's check the summary of PROD_NAME.
+
+```{r}
+#### Examine the class and mode of PROD_NAME
+summary_prodname <- summary(transactionData$PROD_NAME) 
+summary_prodname
+#### Examine the different products of chips
+unique_prodname <- unique(transactionData$PROD_NAME)
+unique_prodname
+length(unique_prodname)
+```
+
+There were exactly 114 different products in our dataset. We need to verify that they were all chips, not others.
+
+```{r Further examine PROD_NAME}
+#### Examine the words in PROD_NAME to see if there are any incorrect entries 
+#### such as products that are not chips 
+productWords <- data.table(unlist(strsplit(transactionData$PROD_NAME, " "))) 
+setnames(productWords, 'words')
+productWords
+```
+
+We are only interested in knowing chips name, so the numbers and special characters are not necessary for this examination. Let's remove them.
+
+```{r}
+#### removing digits
+productWords1 <- chartr("0123456789", "&&&&&&&&&&", productWords)
+productWords1
+```
+
+```{r}
+#### removing non-alphanumeric
+productWords2 <- gsub('[^[:alnum:] ]','',productWords1)
+productWords2
+```
+
+```{r}
+productname <- data.table(unlist(strsplit(productWords2, " ")))
+productname
+```
+
+Now, we identify the most frequent word occurs in PROD_NAME
+
+```{r}
+productname <- as.data.frame(productname)
+productname
+```
+
+
+
+
+
