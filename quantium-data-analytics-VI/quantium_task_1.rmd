@@ -17,7 +17,6 @@ output:
 
 # Solution Task 1
 
-
 ```{r setup, include=FALSE}
 library(knitr)
 knitr::opts_chunk$set(echo = TRUE)
@@ -49,6 +48,7 @@ library(readr)
 install.packages('readxl')
 library(readxl)
 ```
+
 ```{r}
 customerData <- read.csv('QVI_purchase_behaviour.csv')
 transactionData <- read_excel('QVI_transaction_data.xlsx')
@@ -68,12 +68,14 @@ head(transactionData)
 ```{r}
 str(transactionData)
 ```
+
 It occurs that the date was in integer format. To clean this, we need to convert this to the date format. We first note that the date format begin on 30 Dec 1899 and it's definitely safe to assume our dataset starts after that date.
 
 ```{r Convert DATE to date format}
 transactionData$DATE <- as.Date(transactionData$DATE, origin = "1899-12-30")
 head(transactionData)
 ```
+
 Now, the date is in the appropriate format and more readable than the previous one. Next, we want to be sure that we are looking at only potato chips. Let's check the summary of PROD_NAME.
 
 ```{r}
@@ -99,7 +101,7 @@ productWords
 We are only interested in knowing chips name, so the numbers and special characters are not necessary for this examination. Let's remove them.
 
 ```{r}
-#### removing digits
+#### replacing digits
 productWords1 <- chartr("0123456789", "&&&&&&&&&&", productWords)
 productWords1
 ```
@@ -110,19 +112,110 @@ productWords2 <- gsub('[^[:alnum:] ]','',productWords1)
 productWords2
 ```
 
-```{r}
+```{r Putting the cleaned strings into data.table}
 productname <- data.table(unlist(strsplit(productWords2, " ")))
 productname
 ```
 
 Now, we identify the most frequent word occurs in PROD_NAME
 
-```{r}
+```{r Converting data.table to dataframe}
 productname <- as.data.frame(productname)
 productname
 ```
 
+```{r Counting the frequency of the words and sort them from high to low frequency}
+library(dplyr)
+productname %>%
+  filter(V1 != "") %>%
+  group_by(V1) %>%
+  count(V1) %>%
+  arrange(desc(n))
+```
 
+As we can see above, the word "g" happens to be the most appeared, however this character was part of the weight of the product and was not remove during the deletion of digits. Thus, we may ignore "g". This makes "Chips" as the most frequent words in PROD_NAME column. Going through the first two pages, one will eventually found that there is "Salsa" product. This is not part of our use later, so we shall remove it.
 
+```{r Remove salsa product}
+#### Remove salsa products
+transactionData <- as.data.table(transactionData)
+transactionData[, SALSA := grepl("salsa", tolower(PROD_NAME))] 
+transactionData <- transactionData[SALSA == FALSE, ][, SALSA := NULL]
+```
 
+So now we have cleaned the date format and removed non-chips products, we proceed to check the numerical values to seek for missing values or outliers.
 
+```{r Summary of numerical data}
+sum(is.na(transactionData))
+summary(transactionData)
+```
+
+Fortunately, there is no missing values in our dataset. However, judging from the interquartile range and min-max values of PROD_QTY and TOT_SALES, we might have a potential outlier. Let's investigate when the purchased quantity equals 200.
+
+```{r Checking potential outliers}
+transactionData[PROD_QTY > 10,]
+```
+
+We found that 2 transactions where the quantity equals 200 by the same customer (LYTL_CARD_NBR). Let's check if this customer had made any other transactions for chips.
+
+```{r Checking a customer activities}
+transactionData[LYLTY_CARD_NBR == "226000",]
+```
+
+There were no other purchases made by the customer, so this customer is not an ordinary customer. It can be that the purchases made were for commercial. Thus, we will remove the Loyalty card number form our analysis.
+
+```{r Filter out loyalty card number}
+#### we can either filter by LYLTY_CARD_NBR!='226000' or PROD_QTY<200, both will do the work.
+transactionData <- transactionData[LYLTY_CARD_NBR != '226000',]
+```
+
+Let's take a glimpse of our current transactionData
+
+```{r Re-examine transactionData}
+str(transactionData)
+summary(transactionData)
+head(transactionData)
+```
+
+That looks much better. Now, let's look at the number of transaction lines over time to see if there are any obvious data issues such as missing data.
+
+```{r Transactions by date}
+#### Count transactions by date
+transactionbyDate <- transactionData %>%
+  group_by(DATE) %>%
+  count(DATE) 
+```
+
+There are only 364 rows which means 1 date is missing. Let's try to find the missing date. To do this, we create a sequence of dates of 365 days from 01-07-2018 to 30-06-2019. Then, we merge (left-join) the sequence with transactionbyDate to check the date with missing values
+
+```{r}
+library(data.table)
+install.packages("table.express")
+library(table.express)
+```
+
+```{r Finding missing date}
+#### Creating the sequence of date
+daySeq <- seq.Date(as.Date("2018-07-01"), as.Date("2019-06-30"), by="days")
+daySeq <- as.data.table(daySeq)
+setnames(daySeq, "date")
+#### left-joining daySeq and transactionbyDate
+transactionbyDate <- as.data.table(transactionbyDate)
+day_n <- daySeq %>% left_join(transactionbyDate, date = DATE)
+day_n[which(is.na(day_n$n)),]
+```
+
+Aha! The missing date happens to be the Christmas day, which all stores were close on that day. Let's see the plot of the purchases in December.
+
+```{r Plotting purchases over time in December barplot}
+#### Setting plot themes to format graphs 
+theme_set(theme_bw()) 
+theme_update(plot.title = element_text(hjust = 0.5)) 
+#### Plot transactions over time 
+ggplot(day_n, aes(x = DATE, y = n)) + geom_line() + labs(x = "Day", y = "Number of transactions", title = "Transactions over time") + scale_x_date(breaks = "1 month") + theme(axis.text.x = element_text(angle = 90, vjust = 0.5))
+
+#### Plot transactions in December
+day_n_Dec <- day_n[month(DATE) == 12,]
+ggplot(data=day_n_Dec, aes(x=DATE, y=n)) +  labs(x = "Day", y = "Number of transactions", title = "Transactions over time") +
+  geom_bar(stat="identity", fill="steelblue")+
+  theme_minimal()
+```
