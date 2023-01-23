@@ -219,3 +219,76 @@ ggplot(data=day_n_Dec, aes(x=DATE, y=n)) +  labs(x = "Day", y = "Number of trans
   geom_bar(stat="identity", fill="steelblue")+
   theme_minimal()
 ```
+
+Now, we are happy that there were no outliers in our dataset, we can move on to creating other features such as brand of chips or pack size form PROD_NAME. We will start with pack size.
+
+```{r Create pack size}
+#### Pack size 
+#### We can work this out by taking the digits that are in PROD_NAME 
+# transactionData[, PACK_SIZE := parse_number(PROD_NAME)]
+summary(transactionData)
+```
+We have the maximum pack size is 380g and the minimum pack size is 70g - looks fine!
+
+Let's plot a histogram showing pack number of transactions over pack size.
+
+```{r Histogram N over pack size}
+#### create a histogram using ggplot
+ggplot(transactionData, aes(x=PACK_SIZE)) + geom_histogram(bins=30,color="black", fill="blue")
+```
+
+The pack size counts looks alright.
+
+Now, we move on to the second new feature, which is the brand name. To do that, we extract the brand name from the column PROD_NAME
+
+```{r Create brand name}
+#### Install and import stringr
+install.packages("stringr")
+library(stringr)
+#### defining BRAND feature for transactionData
+transactionData[, BRAND := word(PROD_NAME, 1)]
+```
+
+Let's take a look at the values of our new column BRAND
+
+```{r Checking BRAND column}
+unique(transactionData$BRAND)
+```
+It looks like some of the values are shortforms of another. We need to standardize this.
+
+```{r Cleaning BRAND column}
+transactionData[BRAND == "Red", BRAND := "RRD"]
+transactionData[BRAND == "Dorito", BRAND := "Doritos"]
+transactionData[BRAND == "Natural", BRAND := "NCC"]
+transactionData[BRAND == "Snbts", BRAND := "Sunbites"]
+transactionData[BRAND == "Smith", BRAND := "Smiths"]
+transactionData[BRAND == "Infzns", BRAND := "Infuzions"]
+transactionData[BRAND == "Grain", BRAND := "GrainWaves"]
+transactionData[BRAND == "GrnWves", BRAND := "GrainWaves"]
+transactionData[BRAND == "French", BRAND := "FrenchFries"]
+```
+
+```{r Rechecking BRAND column}
+unique(transactionData$BRAND)
+```
+
+It looks like we have 21 different brand of chips. Let's plot a barplot of transactions over brand
+
+```{r Barplot transactions over brand}
+ggplot(transactionData, aes(x=BRAND)) + geom_bar(color="black", fill="blue")  + theme(axis.text.x = element_text(angle = 90, vjust = 0.5))
+```
+
+
+Let's examine our transactionData one more time.
+
+```{r examination on transactionData}
+str(transactionData)
+head(transactionData)
+summary(transactionData)
+```
+
+Everything seems fine. Now, we move on to the next dataset, customerData.
+
+## Examining customerData
+
+To be continued
