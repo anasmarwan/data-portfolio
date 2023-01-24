@@ -225,7 +225,7 @@ Now, we are happy that there were no outliers in our dataset, we can move on to 
 ```{r Create pack size}
 #### Pack size 
 #### We can work this out by taking the digits that are in PROD_NAME 
-# transactionData[, PACK_SIZE := parse_number(PROD_NAME)]
+transactionData[, PACK_SIZE := parse_number(PROD_NAME)]
 summary(transactionData)
 ```
 We have the maximum pack size is 380g and the minimum pack size is 70g - looks fine!
@@ -291,4 +291,78 @@ Everything seems fine. Now, we move on to the next dataset, customerData.
 
 ## Examining customerData
 
-To be continued
+Let's overview the customerData.
+
+```{r Viewing customerData}
+str(customerData)
+summary(customerData)
+head(customerData)
+```
+We have 3 features in customerData, namely LYLTY_CARD_NBR, LIFESTAGE, and PREMIUM_CUSTOMER. Let's look at the values they take in. 
+
+```{r Checking features in customerData}
+#### Checking missing values
+sum(is.na(customerData))
+#### checking the length of unique customers, distinct values of premium and lifestage.
+length(unique(customerData$LYLTY_CARD_NBR))
+unique(customerData$LIFESTAGE)
+unique(customerData$PREMIUM_CUSTOMER)
+```
+To summarize what we just did, we've checked that there is no missing value, the LYLTY_CARD_NBR column has unique values, 7 different values for LIFESTAGE, and 3 different type of PREMIUM_CUSTOMER. The values look fine, and we don't need to do much cleaning. Now, let's merge customerData to transactionData.
+
+```{r Merging customerData to transactionData}
+#### Merge transaction data to customer data 
+data <- merge(transactionData, customerData, all.x = TRUE)
+str(data)
+head(data)
+```
+As the number of rows in `data` is the same as that of `transactionData`, we can be sure that no duplicates were created. This is because we created `data` by setting `all.x = TRUE` (in other words, a left join) which means take all the rows in `transactionData` and find rows with matching values in shared columns and then joining the details in these rows to the `x` or the first mentioned table.
+
+Let's also check if some customers were not matched on by checking for nulls.
+
+```{r Check for missing customer details}
+#### Examine the rows with no LIFESTAGE data from customerData dataset.
+which(is.na(data$LIFESTAGE))
+```
+Great, there is no null values! So all our customers in the transaction data has been accounted for in the customer dataset.
+
+Let's save the "data" dataset in a csv file. this will be good for Task 2.
+
+```{r Code to save dataset as a csv, eval=FALSE} 
+# fwrite(data, paste0('E:/data-portfolio/quantium-data-analytics-VI/',"QVI_data.csv")) 
+```
+
+Data Exploration is now complete!
+
+## Data Analysis on customer section
+
+Now that the data is ready for analysis, we can define some metrics of interest to the client:
+
+- Who spends the most on chips (total sales), describing customers by lifestage and how premium their general purchasing behaviour is
+- How many customers are in each segment
+- How many chips are bought per customer by segment- What's the average chip price by customer segment 
+
+We could also ask our data team for more information. Examples are:
+- The customer's total spend over the period and total spend for each transaction to understand what proportion of their grocery spend is on chips
+- Proportion of customers in each customer segment overall to compare against the mix of customers who purchase chips 
+
+Let's start with calculating total sales by LIFESTAGE and PREMIUM_CUSTOMER and plotting the split by these segments to describe which customer segment contribute most to chip sales.
+
+```{r  fig.width = 10, fig.align = "center"}
+#### Total sales by LIFESTAGE and PREMIUM_CUSTOMER 
+sales_by_lifestage <- data %>%
+  group_by(LIFESTAGE) %>%
+  summarise(sum(TOT_SALES))
+
+sales_by_premium <- data %>%
+  group_by(PREMIUM_CUSTOMER) %>%
+  summarise(sum(TOT_SALES))
+
+#### Plot them
+ggplot(sales_by_lifestage, aes(x=LIFESTAGE, y=V1)) + geom_col(bins= 20, color="black", fill="blue") + theme(axis.text.x = element_text(angle = 90, vjust = 0.5))
+ggplot(sales_by_premium, aes(x=PREMIUM_CUSTOMER, y=V1)) + geom_col(bins= 20, color="black", fill="blue")  + theme(axis.text.x = element_text(angle = 90, vjust = 0.5))
+```
+
+
+
+
