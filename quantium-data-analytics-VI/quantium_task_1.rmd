@@ -359,10 +359,83 @@ sales_by_premium <- data %>%
   summarise(sum(TOT_SALES))
 
 #### Plot them
-ggplot(sales_by_lifestage, aes(x=LIFESTAGE, y=V1)) + geom_col(bins= 20, color="black", fill="blue") + theme(axis.text.x = element_text(angle = 90, vjust = 0.5))
-ggplot(sales_by_premium, aes(x=PREMIUM_CUSTOMER, y=V1)) + geom_col(bins= 20, color="black", fill="blue")  + theme(axis.text.x = element_text(angle = 90, vjust = 0.5))
+ggplot(sales_by_lifestage, aes(x=LIFESTAGE, y=V1)) + geom_col(width=0.5, color="black", fill="blue") + theme(axis.text.x = element_text(angle = 90, vjust = 0.5))
+ggplot(sales_by_premium, aes(x=PREMIUM_CUSTOMER, y=V1)) + geom_col(width=0.5, color="black", fill="blue")  + theme(axis.text.x = element_text(angle = 90, vjust = 0.5))
 ```
 
+There are more Mainstream - young singles/couples and Mainstream - retirees who buy chips. This contributes to there being more sales to these customer segments but this is not a major driver for the Budget - Older families segment. 
 
+Higher sales may also be driven by more units of chips being bought per customer. Let's have a look at this next.
+
+```{r fig.width = 10, fig.align = "center"} 
+#### Average number of units per customer by LIFESTAGE and PREMIUM_CUSTOMER 
+
+######## Create a table of customer with total quantity purchased
+total_qty <- data %>%
+  group_by(LYLTY_CARD_NBR) %>%
+  summarise(TOT_PROD_QTY=sum(PROD_QTY))
+
+total_qty <- merge(total_qty, customerData, all.x=TRUE)
+
+######## Summarise by LIFESTAGE and PREMIUM_CUSTOMER
+
+tot_qty_lifestyle <- total_qty %>% group_by(LIFESTAGE) %>% summarise(AVG_PROD_QTY=mean(TOT_PROD_QTY))
+tot_qty_premium <- total_qty %>% group_by(PREMIUM_CUSTOMER) %>% summarise(AVG_PROD_QTY=mean(TOT_PROD_QTY))
+
+######## Plot them
+
+ggplot(tot_qty_lifestyle, aes(x=LIFESTAGE, y=AVG_PROD_QTY)) + geom_col(width=0.5, color="black", fill="blue") + theme(axis.text.x = element_text(angle = 90, vjust = 0.5))
+ggplot(tot_qty_premium, aes(x=PREMIUM_CUSTOMER, y=AVG_PROD_QTY)) + geom_col(width=0.3, color="black", fill="blue")  + theme(axis.text.x = element_text(angle = 90, vjust = 0.5))
+```
+Older families and young families in general buy more chips per customer 
+
+Let's also investigate the average price per unit chips bought for each customer segment as this is also a driver of total sales.
+
+```{r fig.width = 10, fig.align = "center"} 
+#### Average price per unit by LIFESTAGE and PREMIUM_CUSTOMER 
+
+# Over to you! Calculate and plot the average price per unit sold (average sale price) by those two customer dimensions. 
+# Create table of customer and sales per unit
+# First we summarise TOTAL_SALES per customer and then combine with total_qty table.
+sales_per_customer <- data %>% group_by(LYLTY_CARD_NBR) %>% summarise(CUSTOMER_SALES = sum(TOT_SALES))
+sales_per_customer <- merge(total_qty, sales_per_customer, all.x = TRUE)
+
+# add a column that represent price per unit paid bu each customer
+sales_per_unit <- sales_per_customer %>% mutate(SPU=CUSTOMER_SALES/TOT_PROD_QTY)
+
+# summarise average price per unit by lifestage and premium categories.
+spu <- sales_per_unit %>% group_by(LIFESTAGE, PREMIUM_CUSTOMER) %>% summarise(AVG_SPU=mean(SPU))
+######## Plot them
+
+ggplot(spu, aes(fill=PREMIUM_CUSTOMER, y=AVG_SPU, x=LIFESTAGE))  + 
+    geom_bar(position="dodge", stat="identity") + theme(axis.text.x = element_text(angle = 60, vjust = 0.5))
+```
+Mainstream midage and young singles and couples are more willing to pay more per packet of chips compared to their budget and premium counterparts. This may be due to premium shoppers being more likely to buy healthy snacks and when they buy chips, this is mainly for entertainment purposes rather than their own consumption. This is also supported by there being fewer premium midage and young singles and couples buying chips compared to their mainstream counterparts. 
+
+As the difference in average price per unit isn't large, we can check if this difference is statistically different.
+
+```{r} 
+#### Perform an independent t-test between mainstream vs premium and budget midage and 
+#### young singles and couples 
+# Over to you! Perform a t-test to see if the difference is significant. 
+
+mainstream <- (spu %>% filter(PREMIUM_CUSTOMER=="Mainstream" & (LIFESTAGE=="YOUNG SINGLES/COUPLES"|LIFESTAGE=="MIDAGE SINGLES/COUPLES")))$AVG_SPU
+budget <- (spu %>% filter(PREMIUM_CUSTOMER =="Budget" & (LIFESTAGE=="YOUNG SINGLES/COUPLES"|LIFESTAGE=="MIDAGE SINGLES/COUPLES")))$AVG_SPU
+budget <- (spu %>% filter(PREMIUM_CUSTOMER =="Premium" & (LIFESTAGE=="YOUNG SINGLES/COUPLES"|LIFESTAGE=="MIDAGE SINGLES/COUPLES")))$AVG_SPU
+
+t.test(mainstream, budget, var.equal=TRUE)
+t.test(mainstream, premium, var.equal=TRUE)
+```
+The t-test results in a p-value of 0.04258 (0.01667), i.e. the unit price for mainstream, young and mid-age singles and couples ARE significantly higher than that of budget (premium), young and midage singles and couples.
+
+## Deep dive into specific customer segments for insights 
+
+We have found quite a few interesting insights that we can dive deeper into. We might want to target customer segments that contribute the most to sales to retain them or further increase sales. Let's look at Mainstream - young singles/couples. For instance, let's find out if they tend to buy a particular brand of chips.
+
+```{r fig.align = "center"} 
+#### Deep dive into Mainstream, young singles/couples 
+# Over to you! Work out of there are brands that these two customer segments prefer more than others. You could use a technique called affinity analysis or a-priori analysis (or any other method if you prefer) 
+
+```
 
 
