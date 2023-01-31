@@ -2,17 +2,15 @@
 title: "Quantium Virtual Intership Virtual Strategy and Analytics - Task 1"
 author: Anas Marwan
 date: 21/1/2023
-mainfont: Roboto
-monofont:Consolas
 output:
     pdf_document:
         df_print: default
         highlight: tango
         keep_tex: yes
-        latex_engine: xelatex
+        latex_engine: pdflatex
     header-includes:
         \usepackage{fvextra}
-\DefineVerbatimEnvironment{Highlighting}{Verbatim}{breaklines,commandchars=\\\{\}}
+        \DefineVerbatimEnvironment{Highlighting}{Verbatim}{breaklines,commandchars=\\\{\}}
 ---
 
 # Solution Task 1
@@ -20,23 +18,10 @@ output:
 ```{r setup, include=FALSE}
 library(knitr)
 knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(warning = FALSE)
 knitr::opts_chunk$set(linewidth=80)
 ```
 
-```{r knitr line wrap setup, include=FALSE}
-hook_output = knit_hooks$get("output")
-knit_hooks$set(output = function(x, options)
-{
-  if (!is.null(n <- options$linewidth))
-  {
-    x = knitr:::split_lines(x)
-    if (any(nchar(x) > n))
-      x =  strwrap(x, width = n)
-    x = paste(x, collapse = "\n")
-  }
-  hooks_output(x, options)
-})
-```
 
 #### Load required libraries
 
@@ -45,7 +30,6 @@ library(data.table)
 library(ggplot2)
 library(ggmosaic)
 library(readr)
-install.packages('readxl')
 library(readxl)
 ```
 
@@ -60,8 +44,7 @@ The first step of analysis is to understand the data. Let's take a look at each 
 
 ### Examining transaction data
 
-```{r Examining transaction data}
-#### observing the first few rows of the dataset
+```{r}
 head(transactionData)
 ```
 
@@ -100,16 +83,14 @@ productWords
 
 We are only interested in knowing chips name, so the numbers and special characters are not necessary for this examination. Let's remove them.
 
-```{r}
+```{r, message=FALSE}
 #### replacing digits
 productWords1 <- chartr("0123456789", "&&&&&&&&&&", productWords)
-productWords1
 ```
 
-```{r}
+```{r, message=FALSE}
 #### removing non-alphanumeric
 productWords2 <- gsub('[^[:alnum:] ]','',productWords1)
-productWords2
 ```
 
 ```{r Putting the cleaned strings into data.table}
@@ -187,9 +168,8 @@ transactionbyDate <- transactionData %>%
 
 There are only 364 rows which means 1 date is missing. Let's try to find the missing date. To do this, we create a sequence of dates of 365 days from 01-07-2018 to 30-06-2019. Then, we merge (left-join) the sequence with transactionbyDate to check the date with missing values
 
-```{r}
+```{r, include=FALSE}
 library(data.table)
-install.packages("table.express")
 library(table.express)
 ```
 
@@ -243,7 +223,6 @@ Now, we move on to the second new feature, which is the brand name. To do that, 
 
 ```{r Create brand name}
 #### Install and import stringr
-install.packages("stringr")
 library(stringr)
 #### defining BRAND feature for transactionData
 transactionData[, BRAND := word(PROD_NAME, 1)]
@@ -291,7 +270,7 @@ Everything seems fine. Now, we move on to the next dataset, customerData.
 
 ## Examining customerData
 
-Let's overview the customerData.
+Let's examine the customerData.
 
 ```{r Viewing customerData}
 str(customerData)
@@ -359,8 +338,8 @@ sales_by_premium <- data %>%
   summarise(sum(TOT_SALES))
 
 #### Plot them
-ggplot(sales_by_lifestage, aes(x=LIFESTAGE, y=V1)) + geom_col(width=0.5, color="black", fill="blue") + theme(axis.text.x = element_text(angle = 90, vjust = 0.5))
-ggplot(sales_by_premium, aes(x=PREMIUM_CUSTOMER, y=V1)) + geom_col(width=0.5, color="black", fill="blue")  + theme(axis.text.x = element_text(angle = 90, vjust = 0.5))
+ggplot(sales_by_lifestage, aes(x=LIFESTAGE, y=V1)) + geom_col(width=0.5, color="black", fill="blue") + theme(axis.text.x = element_text(angle = 90, vjust = 0.5)) + labs(x = "Lifestage", y = "Number of transactions", title = "Transactions by Lifestage")
+ggplot(sales_by_premium, aes(x=PREMIUM_CUSTOMER, y=V1)) + geom_col(width=0.3, color="black", fill="blue")  + theme(axis.text.x = element_text(angle = 90, vjust = 0.5)) + labs(x = "Premium Class", y = "Number of transactions", title = "Transactions by Premium")
 ```
 
 There are more Mainstream - young singles/couples and Mainstream - retirees who buy chips. This contributes to there being more sales to these customer segments but this is not a major driver for the Budget - Older families segment. 
@@ -384,8 +363,8 @@ tot_qty_premium <- total_qty %>% group_by(PREMIUM_CUSTOMER) %>% summarise(AVG_PR
 
 ######## Plot them
 
-ggplot(tot_qty_lifestyle, aes(x=LIFESTAGE, y=AVG_PROD_QTY)) + geom_col(width=0.5, color="black", fill="blue") + theme(axis.text.x = element_text(angle = 90, vjust = 0.5))
-ggplot(tot_qty_premium, aes(x=PREMIUM_CUSTOMER, y=AVG_PROD_QTY)) + geom_col(width=0.3, color="black", fill="blue")  + theme(axis.text.x = element_text(angle = 90, vjust = 0.5))
+ggplot(tot_qty_lifestyle, aes(x=LIFESTAGE, y=AVG_PROD_QTY)) + geom_col(width=0.5, color="black", fill="blue") + theme(axis.text.x = element_text(angle = 90, vjust = 0.5)) + labs(x = "Lifestage", y = "Average Quantity Purchase", title = "Average Quantity Purchase by Lifestage")
+ggplot(tot_qty_premium, aes(x=PREMIUM_CUSTOMER, y=AVG_PROD_QTY)) + geom_col(width=0.3, color="black", fill="blue")  + theme(axis.text.x = element_text(angle = 90, vjust = 0.5)) + labs(x = "Premium Class", y = "Average Quantity Purchase", title = "Average Quantity Purchase by Premium")
 ```
 Older families and young families in general buy more chips per customer 
 
@@ -408,7 +387,7 @@ spu <- sales_per_unit %>% group_by(LIFESTAGE, PREMIUM_CUSTOMER) %>% summarise(AV
 ######## Plot them
 
 ggplot(spu, aes(fill=PREMIUM_CUSTOMER, y=AVG_SPU, x=LIFESTAGE))  + 
-    geom_bar(position="dodge", stat="identity") + theme(axis.text.x = element_text(angle = 60, vjust = 0.5))
+    geom_bar(position="dodge", stat="identity") + theme(axis.text.x = element_text(angle = 60, vjust = 0.5)) + labs(x = "Lifestage", y = "Average Price Per Unit", title = "Average Purchase Per Unit by Lifestage and Premium")
 ```
 Mainstream midage and young singles and couples are more willing to pay more per packet of chips compared to their budget and premium counterparts. This may be due to premium shoppers being more likely to buy healthy snacks and when they buy chips, this is mainly for entertainment purposes rather than their own consumption. This is also supported by there being fewer premium midage and young singles and couples buying chips compared to their mainstream counterparts. 
 
@@ -417,11 +396,10 @@ As the difference in average price per unit isn't large, we can check if this di
 ```{r} 
 #### Perform an independent t-test between mainstream vs premium and budget midage and 
 #### young singles and couples 
-# Over to you! Perform a t-test to see if the difference is significant. 
 
 mainstream <- (spu %>% filter(PREMIUM_CUSTOMER=="Mainstream" & (LIFESTAGE=="YOUNG SINGLES/COUPLES"|LIFESTAGE=="MIDAGE SINGLES/COUPLES")))$AVG_SPU
 budget <- (spu %>% filter(PREMIUM_CUSTOMER =="Budget" & (LIFESTAGE=="YOUNG SINGLES/COUPLES"|LIFESTAGE=="MIDAGE SINGLES/COUPLES")))$AVG_SPU
-budget <- (spu %>% filter(PREMIUM_CUSTOMER =="Premium" & (LIFESTAGE=="YOUNG SINGLES/COUPLES"|LIFESTAGE=="MIDAGE SINGLES/COUPLES")))$AVG_SPU
+premium <- (spu %>% filter(PREMIUM_CUSTOMER =="Premium" & (LIFESTAGE=="YOUNG SINGLES/COUPLES"|LIFESTAGE=="MIDAGE SINGLES/COUPLES")))$AVG_SPU
 
 t.test(mainstream, budget, var.equal=TRUE)
 t.test(mainstream, premium, var.equal=TRUE)
@@ -432,10 +410,94 @@ The t-test results in a p-value of 0.04258 (0.01667), i.e. the unit price for ma
 
 We have found quite a few interesting insights that we can dive deeper into. We might want to target customer segments that contribute the most to sales to retain them or further increase sales. Let's look at Mainstream - young singles/couples. For instance, let's find out if they tend to buy a particular brand of chips.
 
-```{r fig.align = "center"} 
+```{r fig.align = "center", warning=FALSE} 
 #### Deep dive into Mainstream, young singles/couples 
-# Over to you! Work out of there are brands that these two customer segments prefer more than others. You could use a technique called affinity analysis or a-priori analysis (or any other method if you prefer) 
+#### Mainstreams
 
+# filter data into Mainstreams only
+mainstreamData <- data %>% filter(PREMIUM_CUSTOMER == "Mainstream")
+
+# frequency of brands purchased by mainstreams
+brands_mainstream <- mainstreamData %>% count(BRAND, sort=TRUE)
+
+# plot 
+ggplot(brands_mainstream, aes(x=BRAND, y=n)) + geom_col(width = 0.5, color="black", fill="blue") + theme(axis.text.x = element_text(angle = 90, vjust = 0.5))
+
+
+#### Young singles/couples
+
+# filter data into Young singles/couples only
+youngData <- data %>% filter(LIFESTAGE == "YOUNG SINGLES/COUPLES")
+
+# frequency of brands purchased by mainstreams
+brands_young <- youngData %>% count(BRAND, sort=TRUE)
+
+# plot 
+ggplot(brands_young, aes(x=BRAND, y=n)) + geom_col(width = 0.5, color="black", fill="blue") + theme(axis.text.x = element_text(angle = 90, vjust = 0.5))
 ```
+We can see that among the customers in the two groups, Kettle leading the charts followed by Smiths, Doritos and Pringles. 
+
+Let's also find out if our target segment tends to buy larger packs of chips.
+
+```{r fig.align = "center", warning=FALSE} 
+#### Deep dive into Mainstream, young singles/couples 
+
+#### Mainstreams
+
+# change datatype of PACK_SIZE to numeric
+mainstreamData$PACK_SIZE <- as.character(mainstreamData$PACK_SIZE)
+
+# frequency of packsize purchased by mainstreams
+size_mainstream <- mainstreamData %>% count(PACK_SIZE, sort=TRUE)
+
+# plot 
+ggplot(size_mainstream, aes(x=PACK_SIZE, y=n)) + geom_col(width = 0.5, color="black", fill="blue") + theme(axis.text.x = element_text(angle = 90, vjust = 0.5))
+
+
+#### Young singles/couples
+
+# change datatype of PACK_SIZE to numeric
+youngData$PACK_SIZE <- as.character(youngData$PACK_SIZE)
+
+# frequency of brands purchased by mainstreams
+size_young <- youngData %>% count(PACK_SIZE, sort=TRUE)
+
+# plot 
+ggplot(size_young, aes(x=PACK_SIZE, y=n)) + geom_col(width = 0.5, color="black", fill="blue") + theme(axis.text.x = element_text(angle = 90, vjust = 0.5))
+```
+As the plot suggests, the most popular pack size among our targets is 175g, followed by 150g, 134g, and 110g. However, we might want to understand how strongly related pack size and brands are, since pack size corresponds to some products. Not all products available in different pack size. See the following tables.
+
+```{r}
+data %>% filter(PACK_SIZE==175) %>% count(BRAND, sort = TRUE)
+data %>% filter(BRAND=="Kettle") %>% count(PACK_SIZE, sort = TRUE)
+```
+
+Motivated by this, we might want to consider brand+pack size as a category.
+
+```{r, fig.align='center', warning=FALSE}
+mainstream_BS <- mainstreamData %>% mutate(BRAND_SIZE=paste(BRAND, PACK_SIZE)) %>% count(BRAND_SIZE, sort = TRUE)
+ggplot(mainstream_BS, aes(x=BRAND_SIZE, y=n)) + geom_col(width = 0.5, color="black", fill="blue") + theme(axis.text.x = element_text(angle = 90, vjust = 0.5))
+
+young_BS <- youngData %>% mutate(BRAND_SIZE=paste(BRAND, PACK_SIZE)) %>% count(BRAND_SIZE, sort = TRUE)
+ggplot(young_BS, aes(x=BRAND_SIZE, y=n)) + geom_col(width = 0.5, color="black", fill="blue") + theme(axis.text.x = element_text(angle = 90, vjust = 0.5))
+```
+This is interesting. It turns out that Pringles 134 is the best sale in the target groups. Which product(s) Pringles 134 corresponds to?
+
+```{r}
+unique((mainstreamData %>% filter(BRAND == "Pringles" & PACK_SIZE == "134"))$PROD_NAME)
+unique((youngData %>% filter(BRAND == "Pringles" & PACK_SIZE == "134"))$PROD_NAME)
+```
+This must be a popular series of Pringles chips. Let's find out which flavour is the most popular.
+
+```{r}
+MS_pringles <- mainstreamData %>% filter(BRAND == "Pringles" & PACK_SIZE == "134") %>% count(PROD_NAME)
+ggplot(MS_pringles, aes(x=PROD_NAME, y=n)) + geom_col(width = 0.5, color="black", fill="blue") + theme(axis.text.x = element_text(angle = 90, vjust = 0.5))
+young_pringles <- youngData %>% filter(BRAND == "Pringles" & PACK_SIZE == "134") %>% count(PROD_NAME)
+ggplot(young_pringles, aes(x=PROD_NAME, y=n)) + geom_col(width = 0.5, color="black", fill="blue") + theme(axis.text.x = element_text(angle = 90, vjust = 0.5))
+```
+It seems that all the flavors are almost equally popular. Let's end our analysis here.
+
+
+
 
 
